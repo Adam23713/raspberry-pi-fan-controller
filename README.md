@@ -62,10 +62,11 @@ sudo git clone https://github.com/Adam23713/raspberry-pi-fan-controller.git /opt
 sudo /opt/fanpid/scripts/install.sh
 ```
 
-The installer creates an isolated Python environment, installs the application,
-copies and enables the systemd service, and starts the controller. An existing
-`/opt/fanpid/config/fanpid.toml` file is preserved when the installer is run
-again.
+The installer installs the required `python3-venv` and `python3-lgpio` system
+packages, creates a Python environment with access to the GPIO backend, installs
+the application, enables the systemd service, and starts the controller. An
+existing `/opt/fanpid/config/fanpid.toml` file is preserved when the installer
+is run again.
 
 Check the service status and follow its logs with:
 
