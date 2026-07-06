@@ -8,8 +8,10 @@ version = "0.1.0"
 description = "PID-based Raspberry Pi fan controller"
 requires-python = ">=3.9"
 dependencies = [
+    "fastapi>=0.115",
     "gpiozero>=2.0",
     "tomli>=2.0; python_version < '3.11'",
+    "uvicorn>=0.30",
 ]
 
 [project.scripts]

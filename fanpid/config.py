@@ -46,11 +46,19 @@ class LoggingConfig:
 
 
 @dataclass(frozen=True)
+class WebConfig:
+    enabled: bool = True
+    host: str = "0.0.0.0"
+    port: int = 8080
+
+
+@dataclass(frozen=True)
 class Config:
     fan: FanConfig
     temperature: TemperatureConfig
     pid: PidConfig
     logging: LoggingConfig
+    web: WebConfig
 
 
 def load_config(path: str | Path) -> Config:
@@ -62,4 +70,5 @@ def load_config(path: str | Path) -> Config:
         temperature=TemperatureConfig(**data["temperature"]),
         pid=PidConfig(**data["pid"]),
         logging=LoggingConfig(**data["logging"]),
+        web=WebConfig(**data.get("web", {})),
     )

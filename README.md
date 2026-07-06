@@ -4,8 +4,9 @@ A configurable PID-based fan controller for Raspberry Pi. It reads the CPU
 temperature, smooths short temperature spikes, and controls a PWM fan through a
 GPIO pin.
 
-The project currently provides the fan-control daemon. A web dashboard, manual
-control, process monitoring, and Docker Compose overview are planned.
+The project currently provides the fan-control daemon and a read-only web
+dashboard. Manual control, process monitoring, and Docker Compose overview are
+planned.
 
 ## Features
 
@@ -19,6 +20,7 @@ control, process monitoring, and Docker Compose overview are planned.
 - Journal-friendly logging
 - systemd service definition
 - TOML configuration
+- Read-only web dashboard and JSON status endpoint
 
 ## Requirements
 
@@ -74,6 +76,22 @@ Check the service status and follow its logs with:
 sudo systemctl status fanpid
 sudo journalctl -u fanpid -f
 ```
+
+## Web dashboard
+
+By default, the read-only dashboard listens on port `8080` on all network
+interfaces. Open the following address from another device on the same network:
+
+```text
+http://RASPBERRY_PI_IP:8080
+```
+
+It displays the averaged CPU temperature, raw CPU temperature, current fan PWM
+duty cycle, and the time of the latest sample. The same data is available as
+JSON at `/api/status`.
+
+The dashboard currently has no authentication. Keep it on a trusted local
+network and do not expose it directly to the internet.
 
 ## Uninstallation
 
@@ -133,6 +151,11 @@ kp = 0.07
 ki = 0.01
 kd = 0.15
 integral_limit = 20.0
+
+[web]
+enabled = true
+host = "0.0.0.0"
+port = 8080
 ```
 
 Duty-cycle values use the range `0.0` to `1.0`. For example, `0.30` means
@@ -166,7 +189,9 @@ fanpid/
 ├── daemon.py       # Command-line entry point
 ├── fan.py          # GPIO/PWM fan access
 ├── pid.py          # PID calculation
-└── temperature.py  # CPU temperature interface and file-based reader
+├── state.py        # Thread-safe runtime status
+├── temperature.py  # CPU temperature interface and file-based reader
+└── web.py          # Read-only dashboard and status API
 
 config/fanpid.toml
 systemd/fanpid.service
@@ -176,7 +201,6 @@ systemd/fanpid.service
 
 - Safe shutdown and failsafe operation
 - Automatic and manual control modes
-- Web dashboard for temperature and fan status
 - Web-based PID configuration
 - Top CPU-consuming process overview
 - Docker container and Compose project overview

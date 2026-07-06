@@ -1,10 +1,13 @@
 import argparse
 import logging
+from threading import Thread
 
 from fanpid.config import load_config
 from fanpid.controller import FanController
 from fanpid.fan import Fan
+from fanpid.state import FanState
 from fanpid.temperature import FileCpuTemperatureReader
+from fanpid.web import run_web_app
 
 
 def main() -> None:
@@ -13,11 +16,22 @@ def main() -> None:
 
     config = load_config(arguments.config)
     fan = Fan(config.fan)
+    state = FanState()
     controller = FanController(
         config,
         fan,
         FileCpuTemperatureReader(config.temperature.file),
+        state,
     )
+
+    if config.web.enabled:
+        web_thread = Thread(
+            target=run_web_app,
+            args=(state, config.web.host, config.web.port),
+            name="fanpid-web",
+            daemon=True,
+        )
+        web_thread.start()
 
     try:
         controller.run()

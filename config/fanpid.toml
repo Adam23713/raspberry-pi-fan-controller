@@ -25,3 +25,8 @@ integral_limit = 20.0
 [logging]
 interval = 60.0
 pwm_delta = 0.20
+
+[web]
+enabled = true
+host = "0.0.0.0"
+port = 8080

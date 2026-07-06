@@ -5,6 +5,7 @@ from collections import deque
 from fanpid.config import Config
 from fanpid.fan import Fan
 from fanpid.pid import PidController
+from fanpid.state import FanState
 from fanpid.temperature import CpuTemperatureReader
 
 
@@ -14,10 +15,12 @@ class FanController:
         config: Config,
         fan: Fan,
         temperature_reader: CpuTemperatureReader,
+        state: FanState,
     ):
         self._config = config
         self._fan = fan
         self._temperature_reader = temperature_reader
+        self._state = state
         self._pid = PidController(config.pid)
         self._temperatures: deque[float] = deque(
             maxlen=config.temperature.average_samples
@@ -51,6 +54,7 @@ class FanController:
 
             self._fan.set_duty(duty)
             self._previous_duty = duty
+            self._state.update(raw_temperature, temperature, duty)
             self._log_status(temperature, raw_temperature, duty)
             time.sleep(self._config.pid.sample_time)
 
