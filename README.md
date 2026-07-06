@@ -75,6 +75,24 @@ sudo systemctl status fanpid
 sudo journalctl -u fanpid -f
 ```
 
+## Uninstallation
+
+Remove the service and virtual environment while preserving the source code and
+configuration:
+
+```bash
+sudo /opt/fanpid/scripts/uninstall.sh
+```
+
+To also remove `/opt/fanpid`, including the saved configuration and Git data:
+
+```bash
+sudo /opt/fanpid/scripts/uninstall.sh --purge
+```
+
+The uninstaller leaves the shared `python3-venv` and `python3-lgpio` system
+packages installed.
+
 ## Running manually
 
 For development or troubleshooting:
