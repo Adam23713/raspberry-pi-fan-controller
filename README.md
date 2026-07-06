@@ -24,6 +24,7 @@ control, process monitoring, and Docker Compose overview are planned.
 
 - Raspberry Pi running Linux
 - Python 3.9 or newer
+- Python `venv` support (the `python3-venv` package on Raspberry Pi OS)
 - PWM-capable fan control circuit
 
 > [!WARNING]
@@ -58,12 +59,13 @@ The included systemd service expects the project at `/opt/fanpid`.
 
 ```bash
 sudo git clone https://github.com/Adam23713/raspberry-pi-fan-controller.git /opt/fanpid
-sudo python3 -m venv /opt/fanpid/.venv
-sudo /opt/fanpid/.venv/bin/pip install /opt/fanpid
-sudo cp /opt/fanpid/systemd/fanpid.service /etc/systemd/system/fanpid.service
-sudo systemctl daemon-reload
-sudo systemctl enable --now fanpid
+sudo /opt/fanpid/scripts/install.sh
 ```
+
+The installer creates an isolated Python environment, installs the application,
+copies and enables the systemd service, and starts the controller. An existing
+`/opt/fanpid/config/fanpid.toml` file is preserved when the installer is run
+again.
 
 Check the service status and follow its logs with:
 
@@ -159,7 +161,6 @@ systemd/fanpid.service
 - Web-based PID configuration
 - Top CPU-consuming process overview
 - Docker container and Compose project overview
-- Installation and update scripts
 
 ## License
 
