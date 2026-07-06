@@ -166,7 +166,7 @@ fanpid/
 ├── daemon.py       # Command-line entry point
 ├── fan.py          # GPIO/PWM fan access
 ├── pid.py          # PID calculation
-└── temperature.py  # Raspberry Pi CPU temperature reader
+└── temperature.py  # CPU temperature interface and file-based reader
 
 config/fanpid.toml
 systemd/fanpid.service

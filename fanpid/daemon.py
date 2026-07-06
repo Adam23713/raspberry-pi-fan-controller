@@ -4,7 +4,7 @@ import logging
 from fanpid.config import load_config
 from fanpid.controller import FanController
 from fanpid.fan import Fan
-from fanpid.temperature import CpuTemperatureReader
+from fanpid.temperature import FileCpuTemperatureReader
 
 
 def main() -> None:
@@ -13,7 +13,11 @@ def main() -> None:
 
     config = load_config(arguments.config)
     fan = Fan(config.fan)
-    controller = FanController(config, fan, CpuTemperatureReader(config.temperature.file))
+    controller = FanController(
+        config,
+        fan,
+        FileCpuTemperatureReader(config.temperature.file),
+    )
 
     try:
         controller.run()
