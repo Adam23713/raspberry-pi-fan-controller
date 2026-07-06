@@ -1,0 +1,17 @@
+[Unit]
+Description=Raspberry Pi Fan PID Controller
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/opt/fanpid/.venv/bin/fanpid --config /opt/fanpid/config/fanpid.toml
+WorkingDirectory=/opt/fanpid
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=fanpid
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

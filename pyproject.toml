@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rpi-fan-pid"
+version = "0.1.0"
+description = "PID-based Raspberry Pi fan controller"
+requires-python = ">=3.9"
+dependencies = [
+    "gpiozero>=2.0",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[project.scripts]
+fanpid = "fanpid.daemon:main"
+
+[tool.setuptools.packages.find]
+include = ["fanpid*"]

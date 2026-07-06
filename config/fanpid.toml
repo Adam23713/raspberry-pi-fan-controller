@@ -1,0 +1,27 @@
+[fan]
+gpio = 18
+pwm_frequency = 100
+min_duty = 0.30
+max_duty = 1.0
+kickstart_duty = 1.0
+kickstart_time = 1.0
+max_pwm_step = 0.05
+
+[temperature]
+file = "/sys/class/thermal/thermal_zone0/temp"
+average_samples = 5
+
+[pid]
+target_temp = 50.0
+fan_off_temp = 45.0
+full_speed_temp = 70.0
+sample_time = 2.0
+deadband = 1.0
+kp = 0.07
+ki = 0.01
+kd = 0.15
+integral_limit = 20.0
+
+[logging]
+interval = 60.0
+pwm_delta = 0.20
