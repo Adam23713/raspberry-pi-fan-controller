@@ -8,6 +8,10 @@ The project currently provides the fan-control daemon and a read-only web
 dashboard. Manual control, process monitoring, and Docker Compose overview are
 planned.
 
+## Web dashboard
+
+![Raspberry Pi Fan Controller dashboard](docs/images/dashboard.png)
+
 ## Features
 
 - PID-based fan speed control
