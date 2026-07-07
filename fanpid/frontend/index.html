@@ -52,13 +52,9 @@
 
       <article class="panel section">
         <div class="section-head"><h2>Process monitor (top 5 by CPU)</h2></div>
-        <div class="table-wrap"><table><thead><tr><th>Process</th><th>CPU %</th><th>Mem %</th><th>Memory</th></tr></thead><tbody>
-          <tr><td class="process accent">◈ &nbsp;fanpid.py</td><td><span class="bar"><i style="--w:100%"></i></span>12.4%</td><td>1.1%</td><td>45.3 MB</td></tr>
-          <tr><td class="process">🐍 &nbsp;python3</td><td><span class="bar"><i style="--w:65%"></i></span>8.7%</td><td>0.9%</td><td>32.1 MB</td></tr>
-          <tr><td class="process">⚙ &nbsp;kworker/u8:2-events</td><td><span class="bar"><i style="--w:47%"></i></span>6.2%</td><td>0.0%</td><td>–</td></tr>
-          <tr><td class="process">△ &nbsp;jellyfin</td><td><span class="bar"><i style="--w:35%"></i></span>4.8%</td><td>2.3%</td><td>98.7 MB</td></tr>
-          <tr><td class="process">▣ &nbsp;caddy</td><td><span class="bar"><i style="--w:27%"></i></span>3.6%</td><td>1.4%</td><td>57.2 MB</td></tr>
-        </tbody></table></div><button class="table-action" type="button">View all processes</button>
+        <div class="table-wrap"><table><thead><tr><th>Process</th><th>CPU %</th><th>Mem %</th><th>Memory</th></tr></thead><tbody id="process-list">
+          <tr><td colspan="4" class="muted-row">Loading process data…</td></tr>
+        </tbody></table></div>
       </article>
 
       <article class="panel section">

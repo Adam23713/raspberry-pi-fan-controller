@@ -66,6 +66,7 @@ table { width: 100%; border-collapse: collapse; font-size: .82rem; }
 th, td { padding: 10px 6px; border-bottom: 1px solid #1d2a37; text-align: left; white-space: nowrap; }
 th { color: #b3c0d0; font-size: .7rem; font-weight: 500; text-transform: uppercase; }
 .process { color: var(--text); } .process.accent { color: var(--green); }
+.muted-row { color: var(--muted); text-align: center; }
 .bar { display: inline-block; width: min(150px, 12vw); height: 7px; margin-right: 12px; overflow: hidden; border-radius: 8px; background: #16222e; vertical-align: middle; }
 .bar i { display: block; width: var(--w); height: 100%; border-radius: inherit; background: var(--green); }
 .badge { padding: 4px 9px; border: 1px solid #14482b; border-radius: 7px; color: var(--green); background: #0d311f; }

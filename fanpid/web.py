@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from fanpid.process import ProcessInfo, ProcessMonitorService
 from fanpid.service import FanControlService, ManualControlUnavailableError
 from fanpid.state import ControlMode
 
@@ -33,6 +34,14 @@ class SetManualDutyDto(BaseModel):
     duty: float
 
 
+class ProcessDto(BaseModel):
+    pid: int
+    name: str
+    cpu_percent: float
+    memory_percent: float
+    memory_bytes: int
+
+
 def _to_status_dto(service: FanControlService) -> FanStatusDto:
     current_status = service.get_status()
     return FanStatusDto(
@@ -46,7 +55,20 @@ def _to_status_dto(service: FanControlService) -> FanStatusDto:
     )
 
 
-def create_app(service: FanControlService) -> FastAPI:
+def _to_process_dto(process: ProcessInfo) -> ProcessDto:
+    return ProcessDto(
+        pid=process.pid,
+        name=process.name,
+        cpu_percent=process.cpu_percent,
+        memory_percent=process.memory_percent,
+        memory_bytes=process.memory_bytes,
+    )
+
+
+def create_app(
+    fan_control_service: FanControlService,
+    process_monitor_service: ProcessMonitorService,
+) -> FastAPI:
     app = FastAPI(
         title="Raspberry Pi Fan Controller",
         docs_url=None,
@@ -60,29 +82,41 @@ def create_app(service: FanControlService) -> FastAPI:
 
     @app.get("/api/status", response_model=FanStatusDto)
     def status() -> FanStatusDto:
-        return _to_status_dto(service)
+        return _to_status_dto(fan_control_service)
+
+    @app.get("/api/processes", response_model=list[ProcessDto])
+    def processes() -> list[ProcessDto]:
+        return [
+            _to_process_dto(process)
+            for process in process_monitor_service.get_top_processes(limit=5)
+        ]
 
     @app.put("/api/mode", response_model=FanStatusDto)
     def set_mode(request: SetControlModeDto) -> FanStatusDto:
-        service.set_mode(request.mode)
-        return _to_status_dto(service)
+        fan_control_service.set_mode(request.mode)
+        return _to_status_dto(fan_control_service)
 
     @app.put("/api/manual-duty", response_model=FanStatusDto)
     def set_manual_duty(request: SetManualDutyDto) -> FanStatusDto:
         try:
-            service.set_manual_duty(request.duty)
+            fan_control_service.set_manual_duty(request.duty)
         except ManualControlUnavailableError as error:
             raise HTTPException(status_code=409, detail=str(error)) from error
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
-        return _to_status_dto(service)
+        return _to_status_dto(fan_control_service)
 
     return app
 
 
-def run_web_app(service: FanControlService, host: str, port: int) -> None:
+def run_web_app(
+    fan_control_service: FanControlService,
+    process_monitor_service: ProcessMonitorService,
+    host: str,
+    port: int,
+) -> None:
     uvicorn.run(
-        create_app(service),
+        create_app(fan_control_service, process_monitor_service),
         host=host,
         port=port,
         log_level="info",

@@ -79,6 +79,77 @@ async function refresh() {
   } catch (error) { setOnline(false); }
 }
 
+function createCell(text, className = "") {
+  const cell = document.createElement("td");
+  cell.textContent = text;
+  if (className) cell.className = className;
+  return cell;
+}
+
+function formatBytes(bytes) {
+  if (bytes == null) return "–";
+  const units = ["B", "KB", "MB", "GB"];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value.toFixed(unit < 2 ? 0 : 1)} ${units[unit]}`;
+}
+
+function renderProcesses(processes) {
+  const processList = document.getElementById("process-list");
+  processList.replaceChildren();
+  if (!processes.length) {
+    const row = document.createElement("tr");
+    const cell = createCell("No process data available", "muted-row");
+    cell.colSpan = 4;
+    row.append(cell);
+    processList.append(row);
+    return;
+  }
+
+  const maximumCpu = Math.max(1, ...processes.map(process => process.cpu_percent));
+  processes.forEach(process => {
+    const row = document.createElement("tr");
+    const name = createCell(`◈  ${process.name}`, "process");
+    name.title = `PID ${process.pid}`;
+
+    const cpu = document.createElement("td");
+    const bar = document.createElement("span");
+    const fill = document.createElement("i");
+    bar.className = "bar";
+    fill.style.setProperty("--w", `${process.cpu_percent / maximumCpu * 100}%`);
+    bar.append(fill);
+    cpu.append(bar, `${process.cpu_percent.toFixed(1)}%`);
+
+    row.append(
+      name,
+      cpu,
+      createCell(`${process.memory_percent.toFixed(1)}%`),
+      createCell(formatBytes(process.memory_bytes)),
+    );
+    processList.append(row);
+  });
+}
+
+async function refreshProcesses() {
+  try {
+    const response = await fetch("/api/processes", { cache: "no-store" });
+    if (!response.ok) throw new Error(response.status);
+    renderProcesses(await response.json());
+  } catch (error) {
+    const processList = document.getElementById("process-list");
+    processList.replaceChildren();
+    const row = document.createElement("tr");
+    const cell = createCell("Process data unavailable", "muted-row");
+    cell.colSpan = 4;
+    row.append(cell);
+    processList.append(row);
+  }
+}
+
 async function applyMode() {
   const button = document.getElementById("apply-mode"), message = document.getElementById("control-status"); button.disabled = true; message.textContent = "Saving…";
   try { const response = await fetch("/api/mode", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: document.getElementById("mode").value }) }); if (!response.ok) throw new Error(response.status); const data = await response.json(); manualDutyDirty = false; updateControlState(data); if (data.mode === "manual") updateDutyControl(0); message.textContent = "Mode updated"; }
@@ -95,4 +166,4 @@ function updateClock() { document.getElementById("clock").textContent = new Date
 
 document.getElementById("apply-mode").addEventListener("click", applyMode); document.getElementById("apply-duty").addEventListener("click", applyDuty);
 document.getElementById("manual-duty").addEventListener("input", event => { manualDutyDirty = true; updateDutyControl(event.target.value); });
-window.addEventListener("resize", redrawCharts); updateClock(); refresh(); setInterval(updateClock, 1000); setInterval(refresh, 2000);
+window.addEventListener("resize", redrawCharts); updateClock(); refresh(); refreshProcesses(); setInterval(updateClock, 1000); setInterval(refresh, 2000); setInterval(refreshProcesses, 5000);
