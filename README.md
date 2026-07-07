@@ -4,27 +4,24 @@ A configurable PID-based fan controller for Raspberry Pi. It reads the CPU
 temperature, smooths short temperature spikes, and controls a PWM fan through a
 GPIO pin.
 
-The project currently provides the fan-control daemon and a read-only web
-dashboard. Manual control, process monitoring, and Docker Compose overview are
-planned.
+The project provides a fan-control daemon and a responsive web dashboard for
+monitoring temperatures, switching between automatic and manual control, and
+inspecting host processes and Docker Compose services.
 
-## Web dashboard
-
-![Raspberry Pi Fan Controller dashboard](docs/images/dashboard.png)
+![Raspberry Pi Fan Controller web dashboard](docs/images/dashboard.png)
 
 ## Features
 
-- PID-based fan speed control
-- Configurable target, fan-off, and full-speed temperatures
-- Moving-average temperature filtering
-- Deadband to prevent unnecessary speed changes
-- Configurable PWM ramp rate
-- Full-speed kickstart when the fan starts from rest
-- Minimum and maximum duty-cycle limits
-- Journal-friendly logging
-- systemd service definition
-- TOML configuration
-- Read-only web dashboard and JSON status endpoint
+- **Smart fan control** — PID regulation, moving-average temperature filtering,
+  deadband, configurable PWM ramping, and startup kickstart.
+- **Flexible operation** — automatic and manual modes with configurable
+  temperature targets and PWM limits.
+- **Live dashboard** — responsive temperature history, fan status, and control
+  interface.
+- **System monitoring** — top CPU-consuming processes and Docker Compose service
+  resource usage.
+- **Simple deployment** — TOML configuration, journal-friendly logging, systemd
+  integration, and a typed JSON API with replaceable service implementations.
 
 ## Requirements
 
@@ -32,6 +29,7 @@ planned.
 - Python 3.9 or newer
 - Python `venv` support (the `python3-venv` package on Raspberry Pi OS)
 - PWM-capable fan control circuit
+- Docker CLI access (optional, for the Docker Compose services panel)
 
 > [!WARNING]
 > Do not connect a bare fan motor directly to a GPIO pin. Use a fan module with
@@ -83,19 +81,24 @@ sudo journalctl -u fanpid -f
 
 ## Web dashboard
 
-By default, the read-only dashboard listens on port `8080` on all network
-interfaces. Open the following address from another device on the same network:
+The dashboard is available on port `8080` by default:
 
 ```text
 http://RASPBERRY_PI_IP:8080
 ```
 
-It displays the averaged CPU temperature, raw CPU temperature, current fan PWM
-duty cycle, and the time of the latest sample. The same data is available as
-JSON at `/api/status`.
+It shows live temperatures, fan PWM, session history, top CPU-consuming
+processes, and Docker Compose service statistics. The fan can be switched
+between automatic PID control and manual `0%`–`100%` PWM control. Entering
+manual mode always starts at `0%`.
 
-The dashboard currently has no authentication. Keep it on a trusted local
-network and do not expose it directly to the internet.
+The PID panel is currently display-only; values remain configured in
+`config/fanpid.toml`. The Docker panel requires local Docker CLI access and
+stays empty when Docker is unavailable.
+
+The dashboard currently has no authentication and includes fan-control
+operations. Keep it on a trusted local network and do not expose it directly to
+the internet.
 
 ## Uninstallation
 
@@ -131,37 +134,6 @@ Press `Ctrl+C` to stop the controller and turn the fan off.
 
 Settings are stored in [`config/fanpid.toml`](config/fanpid.toml).
 
-```toml
-[fan]
-gpio = 18
-pwm_frequency = 100
-min_duty = 0.30
-max_duty = 1.0
-kickstart_duty = 1.0
-kickstart_time = 1.0
-max_pwm_step = 0.05
-
-[temperature]
-file = "/sys/class/thermal/thermal_zone0/temp"
-average_samples = 5
-
-[pid]
-target_temp = 50.0
-fan_off_temp = 45.0
-full_speed_temp = 70.0
-sample_time = 2.0
-deadband = 1.0
-kp = 0.07
-ki = 0.01
-kd = 0.15
-integral_limit = 20.0
-
-[web]
-enabled = true
-host = "0.0.0.0"
-port = 8080
-```
-
 Duty-cycle values use the range `0.0` to `1.0`. For example, `0.30` means
 30% PWM duty cycle. Temperature values are in degrees Celsius, and time values
 are in seconds.
@@ -180,6 +152,9 @@ calculates a moving average. Below `fan_off_temp`, the fan is turned off. At or
 above `full_speed_temp`, it runs at the configured maximum duty cycle. Between
 those limits, the PID controller calculates the requested output.
 
+In manual mode, PID output is bypassed and the requested manual duty is applied
+directly. Temperature sampling and status reporting continue in both modes.
+
 When starting from rest, the fan briefly receives `kickstart_duty` before
 settling at the calculated speed. This helps fans that cannot start reliably at
 a low PWM duty cycle.
@@ -188,14 +163,22 @@ a low PWM duty cycle.
 
 ```text
 fanpid/
-├── config.py       # TOML configuration models and loading
-├── controller.py   # Main control loop
-├── daemon.py       # Command-line entry point
-├── fan.py          # GPIO/PWM fan access
-├── pid.py          # PID calculation
-├── state.py        # Thread-safe runtime status
-├── temperature.py  # CPU temperature interface and file-based reader
-└── web.py          # Read-only dashboard and status API
+├── frontend/
+│   ├── app.js       # Dashboard behavior and API integration
+│   ├── fanpid.png   # Browser tab icon
+│   ├── index.html   # Dashboard markup
+│   └── styles.css   # Dashboard styling
+├── compose.py       # Docker Compose monitor interface and implementation
+├── config.py        # TOML configuration models and loading
+├── controller.py    # Main control loop
+├── daemon.py        # Dependency wiring and command-line entry point
+├── fan.py           # GPIO/PWM fan access
+├── pid.py           # PID calculation
+├── process.py       # Process monitor interface and psutil implementation
+├── service.py       # Fan-control service interface and implementation
+├── state.py         # Thread-safe runtime and control state
+├── temperature.py   # CPU temperature interface and file-based reader
+└── web.py           # FastAPI routes and DTOs
 
 config/fanpid.toml
 systemd/fanpid.service
@@ -204,10 +187,8 @@ systemd/fanpid.service
 ## Roadmap
 
 - Safe shutdown and failsafe operation
-- Automatic and manual control modes
 - Web-based PID configuration
-- Top CPU-consuming process overview
-- Docker container and Compose project overview
+- Persistent historical metrics
 
 ## License
 
