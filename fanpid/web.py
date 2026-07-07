@@ -1,13 +1,22 @@
-from dataclasses import asdict
+from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 
-from fanpid.state import FanState
+from fanpid.service import FanControlService
 
 
-def create_app(state: FanState) -> FastAPI:
+class FanStatusDto(BaseModel):
+    raw_temperature: Optional[float] = None
+    temperature: Optional[float] = None
+    setpoint: Optional[float] = None
+    duty: float
+    updated_at: Optional[float] = None
+
+
+def create_app(service: FanControlService) -> FastAPI:
     app = FastAPI(
         title="Raspberry Pi Fan Controller",
         docs_url=None,
@@ -18,16 +27,23 @@ def create_app(state: FanState) -> FastAPI:
     def dashboard() -> str:
         return DASHBOARD_HTML
 
-    @app.get("/api/status")
-    def status() -> dict:
-        return asdict(state.snapshot())
+    @app.get("/api/status", response_model=FanStatusDto)
+    def status() -> FanStatusDto:
+        current_status = service.get_status()
+        return FanStatusDto(
+            raw_temperature=current_status.raw_temperature,
+            temperature=current_status.temperature,
+            setpoint=current_status.setpoint,
+            duty=current_status.duty,
+            updated_at=current_status.updated_at,
+        )
 
     return app
 
 
-def run_web_app(state: FanState, host: str, port: int) -> None:
+def run_web_app(service: FanControlService, host: str, port: int) -> None:
     uvicorn.run(
-        create_app(state),
+        create_app(service),
         host=host,
         port=port,
         log_level="info",

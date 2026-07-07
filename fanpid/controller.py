@@ -54,7 +54,12 @@ class FanController:
 
             self._fan.set_duty(duty)
             self._previous_duty = duty
-            self._state.update(raw_temperature, temperature, duty)
+            self._state.update(
+                raw_temperature,
+                temperature,
+                self._config.pid.target_temp,
+                duty,
+            )
             self._log_status(temperature, raw_temperature, duty)
             time.sleep(self._config.pid.sample_time)
 

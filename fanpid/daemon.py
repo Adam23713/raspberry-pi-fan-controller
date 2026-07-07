@@ -5,6 +5,7 @@ from threading import Thread
 from fanpid.config import load_config
 from fanpid.controller import FanController
 from fanpid.fan import Fan
+from fanpid.service import DefaultFanControlService
 from fanpid.state import FanState
 from fanpid.temperature import FileCpuTemperatureReader
 from fanpid.web import run_web_app
@@ -17,6 +18,7 @@ def main() -> None:
     config = load_config(arguments.config)
     fan = Fan(config.fan)
     state = FanState()
+    service = DefaultFanControlService(state)
     controller = FanController(
         config,
         fan,
@@ -27,7 +29,7 @@ def main() -> None:
     if config.web.enabled:
         web_thread = Thread(
             target=run_web_app,
-            args=(state, config.web.host, config.web.port),
+            args=(service, config.web.host, config.web.port),
             name="fanpid-web",
             daemon=True,
         )

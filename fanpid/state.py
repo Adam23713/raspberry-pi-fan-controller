@@ -10,6 +10,7 @@ from typing import Optional
 class FanStatus:
     raw_temperature: Optional[float] = None
     temperature: Optional[float] = None
+    setpoint: Optional[float] = None
     duty: float = 0.0
     updated_at: Optional[float] = None
 
@@ -23,11 +24,13 @@ class FanState:
         self,
         raw_temperature: float,
         temperature: float,
+        setpoint: float,
         duty: float,
     ) -> None:
         status = FanStatus(
             raw_temperature=raw_temperature,
             temperature=temperature,
+            setpoint=setpoint,
             duty=duty,
             updated_at=time(),
         )
