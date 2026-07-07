@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Raspberry Pi Fan Controller</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg: #080f17;
+      --panel: #101923;
+      --panel-2: #0d1620;
+      --border: #243342;
+      --grid: #1b2a38;
+      --text: #f4f7fb;
+      --muted: #a9b6c8;
+      --green: #35d069;
+      --blue: #3d9cff;
+      --purple: #9747ff;
+      --yellow: #f7bd3e;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; background: radial-gradient(circle at 50% -20%, #152130 0, var(--bg) 35%); color: var(--text); }
+    button, select, input { font: inherit; }
+    button, select { color: var(--text); border: 1px solid #304155; border-radius: 7px; background: #0c151f; }
+    button { cursor: pointer; }
+    button:disabled, input:disabled { cursor: not-allowed; opacity: .42; }
+    .shell { width: min(1480px, calc(100% - 48px)); margin: 0 auto; padding: 24px 0 20px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 46px; margin-bottom: 18px; }
+    .brand { display: flex; align-items: center; gap: 18px; min-width: 0; }
+    h1 { margin: 0; font-size: clamp(1.45rem, 2.4vw, 2rem); line-height: 1.1; white-space: nowrap; }
+    .online-state { display: inline-flex; align-items: center; gap: 7px; color: var(--green); white-space: nowrap; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; box-shadow: 0 0 14px currentColor; }
+    .top-time { display: flex; align-items: center; gap: 18px; color: var(--muted); white-space: nowrap; }
+    .theme-icon { display: grid; width: 34px; height: 34px; place-items: center; border: 0; border-radius: 50%; background: #101923; font-size: 1.1rem; }
+    .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .panel { min-width: 0; border: 1px solid var(--border); border-radius: 11px; background: linear-gradient(135deg, rgba(18,28,39,.97), rgba(12,21,30,.97)); box-shadow: 0 12px 30px rgba(0,0,0,.12); }
+    .metric { min-height: 132px; padding: 20px 22px 13px; }
+    .eyebrow { color: #bac6d5; font-size: .78rem; text-transform: uppercase; letter-spacing: .025em; }
+    .metric-value { margin-top: 13px; font-size: 2rem; font-weight: 750; line-height: 1; }
+    .unit { font-size: .95rem; font-weight: 650; }
+    .green { color: var(--green); } .blue { color: var(--blue); } .purple { color: var(--purple); } .yellow { color: var(--yellow); }
+    .spark { width: 100%; height: 35px; margin-top: 11px; display: block; }
+    .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+    .section { padding: 16px 20px; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+    h2 { margin: 0; font-size: .95rem; text-transform: uppercase; }
+    .time-range { padding: 8px 13px; }
+    .chart-legend { display: flex; justify-content: center; flex-wrap: wrap; gap: 26px; margin: 6px 0 8px; color: var(--muted); font-size: .78rem; }
+    .legend-dot { display: inline-block; width: 9px; height: 6px; margin-right: 8px; border-radius: 4px; background: currentColor; }
+    #history-chart { width: 100%; height: 240px; display: block; }
+    .controls { display: grid; grid-template-columns: .82fr 1.16fr .86fr; gap: 9px; }
+    .subpanel { min-width: 0; min-height: 275px; padding: 18px; border: 1px solid #1c2a38; border-radius: 9px; background: rgba(10,18,27,.34); }
+    .subpanel-title { margin-bottom: 24px; color: #b8c5d5; font-size: .75rem; text-transform: uppercase; }
+    .mode-readout { margin: 0 0 28px; color: var(--green); font-size: 1.3rem; font-weight: 700; }
+    .field-label { display: block; margin-bottom: 9px; color: var(--muted); font-size: .8rem; }
+    .select-full { width: 100%; padding: 10px 11px; }
+    .primary { width: 100%; margin-top: 28px; padding: 10px 12px; border: 0; background: linear-gradient(100deg, #078dec, #7426c7); font-size: .8rem; font-weight: 750; text-transform: uppercase; }
+    .message { min-height: 17px; margin-top: 8px; color: var(--muted); font-size: .7rem; text-align: center; }
+    .gauge { --duty: 0deg; position: relative; width: 132px; height: 76px; margin: 7px auto 13px; overflow: hidden; }
+    .gauge::before { content: ""; position: absolute; inset: 0; border: 8px dashed #71849a; border-bottom: 0; border-radius: 80px 80px 0 0; opacity: .8; }
+    .gauge::after { content: ""; position: absolute; bottom: -5px; left: 62px; width: 5px; height: 64px; border-radius: 5px; background: var(--purple); box-shadow: 0 0 10px var(--purple); transform: rotate(var(--duty)); transform-origin: 50% 100%; }
+    .gauge-value { position: absolute; inset: auto 0 4px; z-index: 1; text-align: center; font-size: 1.35rem; font-weight: 750; }
+    .range-row { display: grid; grid-template-columns: 1fr 42px; align-items: center; gap: 10px; }
+    input[type="range"] { width: 100%; accent-color: var(--purple); }
+    .range-value { text-align: right; font-weight: 700; }
+    .hint { margin-top: 9px; color: var(--muted); font-size: .7rem; text-align: center; }
+    .pid-row { display: flex; justify-content: space-between; padding: 11px 7px; border-bottom: 1px solid #1d2a37; color: var(--muted); }
+    .pid-row strong { color: var(--text); }
+    .outline { width: 100%; margin-top: 45px; padding: 9px 12px; color: #6ab0ff; background: transparent; text-transform: uppercase; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    th, td { padding: 10px 6px; border-bottom: 1px solid #1d2a37; text-align: left; white-space: nowrap; }
+    th { color: #b3c0d0; font-size: .7rem; font-weight: 500; text-transform: uppercase; }
+    .process { color: var(--text); } .process.accent { color: var(--green); }
+    .bar { display: inline-block; width: min(150px, 12vw); height: 7px; margin-right: 12px; overflow: hidden; border-radius: 8px; background: #16222e; vertical-align: middle; }
+    .bar i { display: block; width: var(--w); height: 100%; border-radius: inherit; background: var(--green); }
+    .badge { padding: 4px 9px; border: 1px solid #14482b; border-radius: 7px; color: var(--green); background: #0d311f; }
+    .table-action { display: block; min-width: 190px; margin: 8px auto 0; padding: 8px 14px; color: #82b9ff; background: transparent; font-size: .74rem; text-transform: uppercase; }
+    .footer { display: flex; justify-content: space-between; gap: 20px; margin-top: 16px; padding: 17px 24px; color: var(--muted); font-size: .78rem; }
+    .footer-left { display: flex; gap: 26px; }
+    @media (max-width: 1050px) { .metric-grid { grid-template-columns: repeat(2, 1fr); } .dashboard-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 700px) { .shell { width: min(100% - 24px, 1480px); padding-top: 14px; } .topbar, .brand { align-items: flex-start; } .topbar { flex-direction: column; } h1 { white-space: normal; } .top-time { width: 100%; justify-content: space-between; } .metric-grid { grid-template-columns: 1fr; } .controls { grid-template-columns: 1fr; } .subpanel { min-height: auto; } .footer { flex-direction: column; } .bar { width: 85px; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><h1>Raspberry Pi Fan Controller</h1><span id="header-status" class="online-state"><i class="dot"></i><span>Waiting</span></span></div>
+      <div class="top-time"><span id="clock">--</span><button class="theme-icon" type="button" aria-label="Dark theme">◔</button></div>
+    </header>
+
+    <section class="metric-grid">
+      <article class="panel metric"><div class="eyebrow">CPU temperature</div><div class="metric-value green"><span id="temperature">--</span> <span class="unit">°C</span></div><canvas id="temp-spark" class="spark"></canvas></article>
+      <article class="panel metric"><div class="eyebrow">Raw temperature</div><div class="metric-value blue"><span id="raw-temperature">--</span> <span class="unit">°C</span></div><canvas id="raw-spark" class="spark"></canvas></article>
+      <article class="panel metric"><div class="eyebrow">Temperature setpoint</div><div class="metric-value purple"><span id="setpoint">--</span> <span class="unit">°C</span></div><canvas id="setpoint-spark" class="spark"></canvas></article>
+      <article class="panel metric"><div class="eyebrow">Fan PWM</div><div class="metric-value yellow"><span id="duty">--</span> <span class="unit">%</span></div><canvas id="duty-spark" class="spark"></canvas></article>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="panel section">
+        <div class="section-head"><h2>Temperature over time</h2><select class="time-range" aria-label="Chart range"><option>30 min</option></select></div>
+        <div class="chart-legend"><span class="green"><i class="legend-dot"></i>CPU Temp (°C)</span><span class="blue"><i class="legend-dot"></i>Raw Temp (°C)</span><span class="purple"><i class="legend-dot"></i>Setpoint (°C)</span></div>
+        <canvas id="history-chart"></canvas>
+      </article>
+
+      <article class="panel section">
+        <div class="section-head"><h2>Control mode &amp; fan PWM</h2></div>
+        <div class="controls">
+          <section class="subpanel">
+            <div class="subpanel-title">Control mode</div><div id="current-mode" class="mode-readout">--</div>
+            <label class="field-label" for="mode">Change mode</label><select id="mode" class="select-full"><option value="automatic">Automatic</option><option value="manual">Manual</option></select>
+            <button id="apply-mode" class="primary" type="button">Apply</button><div id="control-status" class="message"></div>
+          </section>
+          <section class="subpanel">
+            <div class="subpanel-title" style="text-align:center">Manual fan PWM</div>
+            <div id="gauge" class="gauge"><div id="gauge-value" class="gauge-value">0%</div></div>
+            <div class="range-row"><input id="manual-duty" type="range" min="0" max="100" step="1" value="0" disabled><output id="manual-duty-value" class="range-value">0%</output></div>
+            <button id="apply-duty" class="primary" type="button" disabled>Apply PWM</button><div id="duty-status" class="message"></div><div class="hint">(Only in Manual mode)</div>
+          </section>
+          <section class="subpanel">
+            <div class="subpanel-title" style="text-align:center">PID parameters</div>
+            <div class="pid-row"><span>Kp</span><strong>2.00</strong></div><div class="pid-row"><span>Ki</span><strong>0.50</strong></div><div class="pid-row"><span>Kd</span><strong>1.00</strong></div>
+            <button class="outline" type="button">Edit PID</button>
+          </section>
+        </div>
+      </article>
+
+      <article class="panel section">
+        <div class="section-head"><h2>Process monitor (top 5 by CPU)</h2></div>
+        <div class="table-wrap"><table><thead><tr><th>Process</th><th>CPU %</th><th>Mem %</th><th>Memory</th></tr></thead><tbody>
+          <tr><td class="process accent">◈ &nbsp;fanpid.py</td><td><span class="bar"><i style="--w:100%"></i></span>12.4%</td><td>1.1%</td><td>45.3 MB</td></tr>
+          <tr><td class="process">🐍 &nbsp;python3</td><td><span class="bar"><i style="--w:65%"></i></span>8.7%</td><td>0.9%</td><td>32.1 MB</td></tr>
+          <tr><td class="process">⚙ &nbsp;kworker/u8:2-events</td><td><span class="bar"><i style="--w:47%"></i></span>6.2%</td><td>0.0%</td><td>–</td></tr>
+          <tr><td class="process">△ &nbsp;jellyfin</td><td><span class="bar"><i style="--w:35%"></i></span>4.8%</td><td>2.3%</td><td>98.7 MB</td></tr>
+          <tr><td class="process">▣ &nbsp;caddy</td><td><span class="bar"><i style="--w:27%"></i></span>3.6%</td><td>1.4%</td><td>57.2 MB</td></tr>
+        </tbody></table></div><button class="table-action" type="button">View all processes</button>
+      </article>
+
+      <article class="panel section">
+        <div class="section-head"><h2>Docker Compose services</h2></div>
+        <div class="table-wrap"><table><thead><tr><th>Service</th><th>Status</th><th>CPU %</th><th>Memory</th><th>Uptime</th></tr></thead><tbody>
+          <tr><td>fan-controller</td><td><span class="badge">Running</span></td><td>1.2%</td><td>45.3 MB</td><td>2h 34m 12s</td></tr>
+          <tr><td>prometheus</td><td><span class="badge">Running</span></td><td>0.6%</td><td>38.1 MB</td><td>2h 34m 12s</td></tr>
+          <tr><td>grafana</td><td><span class="badge">Running</span></td><td>0.4%</td><td>56.7 MB</td><td>2h 34m 12s</td></tr>
+          <tr><td>portainer</td><td><span class="badge">Running</span></td><td>0.2%</td><td>27.8 MB</td><td>2h 34m 12s</td></tr>
+          <tr><td>caddy</td><td><span class="badge">Running</span></td><td>0.3%</td><td>33.2 MB</td><td>2h 34m 12s</td></tr>
+        </tbody></table></div><button class="table-action" type="button">View all services</button>
+      </article>
+    </section>
+
+    <footer class="panel footer"><div class="footer-left"><span>Status: <b id="footer-status" class="green">Waiting</b></span><span>Uptime: <span id="uptime">--</span></span></div><span>Last update: <span id="updated-at">--</span> &nbsp; ↻</span></footer>
+  </main>
+
+  <script>
+    const history = { temperature: [], raw: [], setpoint: [], duty: [] };
+    const colors = { temperature: "#35d069", raw: "#3d9cff", setpoint: "#9747ff", duty: "#f7bd3e" };
+    const startedAt = Date.now();
+    let manualDutyDirty = false;
+
+    const format = value => value == null ? "--" : Number(value).toFixed(1);
+    const push = (array, value) => { array.push(value); if (array.length > 90) array.shift(); };
+
+    function resizeCanvas(canvas) {
+      const ratio = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const width = Math.max(1, Math.round(rect.width * ratio));
+      const height = Math.max(1, Math.round(rect.height * ratio));
+      if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
+      return { ctx: canvas.getContext("2d"), width, height, ratio };
+    }
+
+    function drawLine(ctx, values, color, x, y, width, height, min, max) {
+      if (values.length < 2) return;
+      ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2 * (window.devicePixelRatio || 1);
+      values.forEach((value, index) => {
+        const px = x + index * width / Math.max(1, values.length - 1);
+        const py = y + height - (value - min) / Math.max(1, max - min) * height;
+        index ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      });
+      ctx.stroke();
+    }
+
+    function drawSpark(id, values, color) {
+      const canvas = document.getElementById(id); const { ctx, width, height } = resizeCanvas(canvas);
+      ctx.clearRect(0, 0, width, height); if (!values.length) return;
+      const min = Math.min(...values) - 1; const max = Math.max(...values) + 1;
+      drawLine(ctx, values, color, 0, 3, width, height - 6, min, max);
+    }
+
+    function drawHistory() {
+      const canvas = document.getElementById("history-chart"); const { ctx, width, height, ratio } = resizeCanvas(canvas);
+      ctx.clearRect(0, 0, width, height); const left = 44 * ratio, top = 16 * ratio, right = 16 * ratio, bottom = 28 * ratio;
+      const chartWidth = width - left - right, chartHeight = height - top - bottom;
+      ctx.font = `${11 * ratio}px system-ui`; ctx.fillStyle = "#91a1b4"; ctx.strokeStyle = "#1b2a38"; ctx.lineWidth = ratio;
+      [0, 20, 40, 60, 80].forEach(value => { const y = top + chartHeight - value / 80 * chartHeight; ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + chartWidth, y); ctx.stroke(); ctx.fillText(`${value} °C`, 0, y + 4 * ratio); });
+      const all = history.temperature.concat(history.raw, history.setpoint); const filler = all.length ? all : [0, 0];
+      drawLine(ctx, history.temperature, colors.temperature, left, top, chartWidth, chartHeight, 0, 80);
+      drawLine(ctx, history.raw, colors.raw, left, top, chartWidth, chartHeight, 0, 80);
+      drawLine(ctx, history.setpoint, colors.setpoint, left, top, chartWidth, chartHeight, 0, 80);
+    }
+
+    function redrawCharts() {
+      drawSpark("temp-spark", history.temperature, colors.temperature); drawSpark("raw-spark", history.raw, colors.raw);
+      drawSpark("setpoint-spark", history.setpoint, colors.setpoint); drawSpark("duty-spark", history.duty, colors.duty); drawHistory();
+    }
+
+    function setOnline(online) {
+      const text = online ? "Online" : "Unavailable";
+      document.querySelector("#header-status span").textContent = text; document.getElementById("footer-status").textContent = text;
+      document.getElementById("header-status").style.color = online ? "var(--green)" : "var(--yellow)";
+      document.getElementById("footer-status").className = online ? "green" : "yellow";
+    }
+
+    function updateControlState(data) {
+      const manual = data.mode === "manual";
+      document.getElementById("current-mode").textContent = manual ? "Manual" : "Automatic";
+      document.getElementById("current-mode").className = `mode-readout ${manual ? "purple" : "green"}`;
+      document.getElementById("manual-duty").disabled = !manual; document.getElementById("apply-duty").disabled = !manual;
+      if (manual && !manualDutyDirty && data.manual_duty != null) updateDutyControl(Math.round(data.manual_duty * 100));
+    }
+
+    function updateDutyControl(value) {
+      document.getElementById("manual-duty").value = value; document.getElementById("manual-duty-value").textContent = `${value}%`;
+      document.getElementById("gauge-value").textContent = `${value}%`; document.getElementById("gauge").style.setProperty("--duty", `${value * 1.8 - 90}deg`);
+    }
+
+    async function refresh() {
+      try {
+        const response = await fetch("/api/status", { cache: "no-store" }); if (!response.ok) throw new Error(response.status);
+        const data = await response.json();
+        document.getElementById("temperature").textContent = format(data.temperature); document.getElementById("raw-temperature").textContent = format(data.raw_temperature);
+        document.getElementById("setpoint").textContent = format(data.setpoint); document.getElementById("duty").textContent = format(data.duty == null ? null : data.duty * 100);
+        document.getElementById("updated-at").textContent = data.updated_at == null ? "--" : new Date(data.updated_at * 1000).toLocaleString();
+        updateControlState(data); setOnline(data.updated_at != null);
+        if (data.temperature != null) push(history.temperature, data.temperature); if (data.raw_temperature != null) push(history.raw, data.raw_temperature);
+        if (data.setpoint != null) push(history.setpoint, data.setpoint); push(history.duty, (data.duty || 0) * 100); redrawCharts();
+      } catch (error) { setOnline(false); }
+    }
+
+    async function applyMode() {
+      const button = document.getElementById("apply-mode"), message = document.getElementById("control-status"); button.disabled = true; message.textContent = "Saving…";
+      try { const response = await fetch("/api/mode", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: document.getElementById("mode").value }) }); if (!response.ok) throw new Error(response.status); const data = await response.json(); manualDutyDirty = false; updateControlState(data); if (data.mode === "manual") updateDutyControl(0); message.textContent = "Mode updated"; }
+      catch (error) { message.textContent = "Could not change mode"; } finally { button.disabled = false; }
+    }
+
+    async function applyDuty() {
+      const button = document.getElementById("apply-duty"), message = document.getElementById("duty-status"), duty = Number(document.getElementById("manual-duty").value) / 100; button.disabled = true; message.textContent = "Saving…";
+      try { const response = await fetch("/api/manual-duty", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ duty }) }); if (!response.ok) throw new Error(response.status); manualDutyDirty = false; message.textContent = "PWM updated"; }
+      catch (error) { message.textContent = "Could not set PWM"; } finally { button.disabled = document.getElementById("current-mode").textContent !== "Manual"; }
+    }
+
+    function updateClock() { const now = new Date(); document.getElementById("clock").textContent = now.toLocaleString(); const seconds = Math.floor((Date.now() - startedAt) / 1000); document.getElementById("uptime").textContent = `${Math.floor(seconds / 3600)}h ${Math.floor(seconds % 3600 / 60)}m ${seconds % 60}s`; }
+
+    document.getElementById("apply-mode").addEventListener("click", applyMode); document.getElementById("apply-duty").addEventListener("click", applyDuty);
+    document.getElementById("manual-duty").addEventListener("input", event => { manualDutyDirty = true; updateDutyControl(event.target.value); });
+    window.addEventListener("resize", redrawCharts); updateClock(); refresh(); setInterval(updateClock, 1000); setInterval(refresh, 2000);
+  </script>
+</body>
+</html>

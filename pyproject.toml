@@ -20,3 +20,6 @@ fanpid = "fanpid.daemon:main"
 
 [tool.setuptools.packages.find]
 include = ["fanpid*"]
+
+[tool.setuptools.package-data]
+fanpid = ["index.html", "fanpid.png"]
