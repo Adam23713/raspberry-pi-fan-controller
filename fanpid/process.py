@@ -33,7 +33,7 @@ class PsutilProcessMonitorService(ProcessMonitorService):
                     processes.append(
                         ProcessInfo(
                             pid=process.pid,
-                            name=process.name(),
+                            name=self._get_process_name(process),
                             cpu_percent=process.cpu_percent(interval=None),
                             memory_percent=process.memory_percent(),
                             memory_bytes=process.memory_info().rss,
@@ -47,6 +47,15 @@ class PsutilProcessMonitorService(ProcessMonitorService):
             reverse=True,
         )
         return processes[:limit]
+
+    @staticmethod
+    def _get_process_name(process: psutil.Process) -> str:
+        name = process.name()
+        try:
+            command = " ".join(process.cmdline()).lower()
+        except (psutil.AccessDenied, psutil.NoSuchProcess, psutil.ZombieProcess):
+            return name
+        return "fanpid" if "fanpid" in command else name
 
     def _prime_cpu_measurements(self) -> None:
         for process in psutil.process_iter():

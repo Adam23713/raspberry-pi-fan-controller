@@ -98,6 +98,15 @@ function formatBytes(bytes) {
   return `${value.toFixed(unit < 2 ? 0 : 1)} ${units[unit]}`;
 }
 
+function getProcessIcon(processName) {
+  const name = processName.toLowerCase();
+  if (name.includes("fanpid")) return { symbol: "◉", type: "fanpid", label: "Fan PID" };
+  if (name.includes("deluge") || name.includes("deloge")) return { symbol: "◆", type: "deluge", label: "Deluge" };
+  if (name.includes("docker") || name.includes("containerd")) return { symbol: "▣", type: "docker", label: "Container" };
+  if (name.includes("jellyfin")) return { symbol: "△", type: "jellyfin", label: "Jellyfin" };
+  return { symbol: "⚙", type: "generic", label: "Process" };
+}
+
 function renderProcesses(processes) {
   const processList = document.getElementById("process-list");
   processList.replaceChildren();
@@ -113,8 +122,20 @@ function renderProcesses(processes) {
   const maximumCpu = Math.max(1, ...processes.map(process => process.cpu_percent));
   processes.forEach(process => {
     const row = document.createElement("tr");
-    const name = createCell(`◈  ${process.name}`, "process");
+    const name = document.createElement("td");
+    const iconDefinition = getProcessIcon(process.name);
+    const content = document.createElement("span");
+    const icon = document.createElement("span");
+    const processName = document.createElement("span");
+    name.className = "process";
     name.title = `PID ${process.pid}`;
+    content.className = "process-content";
+    icon.className = `process-icon ${iconDefinition.type}`;
+    icon.textContent = iconDefinition.symbol;
+    icon.title = iconDefinition.label;
+    processName.textContent = process.name;
+    content.append(icon, processName);
+    name.append(content);
 
     const cpu = document.createElement("td");
     const bar = document.createElement("span");

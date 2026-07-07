@@ -65,7 +65,13 @@ input[type="range"] { width: 100%; accent-color: var(--purple); }
 table { width: 100%; border-collapse: collapse; font-size: .82rem; }
 th, td { padding: 10px 6px; border-bottom: 1px solid #1d2a37; text-align: left; white-space: nowrap; }
 th { color: #b3c0d0; font-size: .7rem; font-weight: 500; text-transform: uppercase; }
-.process { color: var(--text); } .process.accent { color: var(--green); }
+.process { color: var(--text); }
+.process-content { display: flex; align-items: center; gap: 10px; }
+.process-icon { display: inline-grid; width: 22px; height: 22px; flex: 0 0 22px; place-items: center; border-radius: 6px; color: #9dabbc; background: #182532; font-size: .9rem; line-height: 1; }
+.process-icon.fanpid { color: var(--green); background: #0d2e20; }
+.process-icon.deluge { color: var(--blue); background: #10283e; }
+.process-icon.docker { color: #52b9ff; background: #10283e; }
+.process-icon.jellyfin { color: var(--purple); background: #291640; }
 .muted-row { color: var(--muted); text-align: center; }
 .bar { display: inline-block; width: min(150px, 12vw); height: 7px; margin-right: 12px; overflow: hidden; border-radius: 8px; background: #16222e; vertical-align: middle; }
 .bar i { display: block; width: var(--w); height: 100%; border-radius: inherit; background: var(--green); }
