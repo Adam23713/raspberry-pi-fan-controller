@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from fanpid.compose import ComposeServiceInfo, ComposeServiceMonitorService
 from fanpid.process import ProcessInfo, ProcessMonitorService
 from fanpid.service import FanControlService, ManualControlUnavailableError
 from fanpid.state import ControlMode
@@ -42,6 +43,14 @@ class ProcessDto(BaseModel):
     memory_bytes: int
 
 
+class ComposeServiceDto(BaseModel):
+    name: str
+    status: str
+    cpu_percent: Optional[float] = None
+    memory_bytes: Optional[int] = None
+    uptime_seconds: Optional[int] = None
+
+
 def _to_status_dto(service: FanControlService) -> FanStatusDto:
     current_status = service.get_status()
     return FanStatusDto(
@@ -65,9 +74,20 @@ def _to_process_dto(process: ProcessInfo) -> ProcessDto:
     )
 
 
+def _to_compose_service_dto(service: ComposeServiceInfo) -> ComposeServiceDto:
+    return ComposeServiceDto(
+        name=service.name,
+        status=service.status,
+        cpu_percent=service.cpu_percent,
+        memory_bytes=service.memory_bytes,
+        uptime_seconds=service.uptime_seconds,
+    )
+
+
 def create_app(
     fan_control_service: FanControlService,
     process_monitor_service: ProcessMonitorService,
+    compose_service_monitor: ComposeServiceMonitorService,
 ) -> FastAPI:
     app = FastAPI(
         title="Raspberry Pi Fan Controller",
@@ -91,6 +111,13 @@ def create_app(
             for process in process_monitor_service.get_top_processes(limit=5)
         ]
 
+    @app.get("/api/compose-services", response_model=list[ComposeServiceDto])
+    def compose_services() -> list[ComposeServiceDto]:
+        return [
+            _to_compose_service_dto(service)
+            for service in compose_service_monitor.get_services()
+        ]
+
     @app.put("/api/mode", response_model=FanStatusDto)
     def set_mode(request: SetControlModeDto) -> FanStatusDto:
         fan_control_service.set_mode(request.mode)
@@ -112,11 +139,16 @@ def create_app(
 def run_web_app(
     fan_control_service: FanControlService,
     process_monitor_service: ProcessMonitorService,
+    compose_service_monitor: ComposeServiceMonitorService,
     host: str,
     port: int,
 ) -> None:
     uvicorn.run(
-        create_app(fan_control_service, process_monitor_service),
+        create_app(
+            fan_control_service,
+            process_monitor_service,
+            compose_service_monitor,
+        ),
         host=host,
         port=port,
         log_level="info",

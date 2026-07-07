@@ -59,13 +59,9 @@
 
       <article class="panel section">
         <div class="section-head"><h2>Docker Compose services</h2></div>
-        <div class="table-wrap"><table><thead><tr><th>Service</th><th>Status</th><th>CPU %</th><th>Memory</th><th>Uptime</th></tr></thead><tbody>
-          <tr><td>fan-controller</td><td><span class="badge">Running</span></td><td>1.2%</td><td>45.3 MB</td><td>2h 34m 12s</td></tr>
-          <tr><td>prometheus</td><td><span class="badge">Running</span></td><td>0.6%</td><td>38.1 MB</td><td>2h 34m 12s</td></tr>
-          <tr><td>grafana</td><td><span class="badge">Running</span></td><td>0.4%</td><td>56.7 MB</td><td>2h 34m 12s</td></tr>
-          <tr><td>portainer</td><td><span class="badge">Running</span></td><td>0.2%</td><td>27.8 MB</td><td>2h 34m 12s</td></tr>
-          <tr><td>caddy</td><td><span class="badge">Running</span></td><td>0.3%</td><td>33.2 MB</td><td>2h 34m 12s</td></tr>
-        </tbody></table></div><button class="table-action" type="button">View all services</button>
+        <div class="table-wrap"><table><thead><tr><th>Service</th><th>Status</th><th>CPU %</th><th>Memory</th><th>Uptime</th></tr></thead><tbody id="compose-service-list">
+          <tr><td colspan="5" class="muted-row">Loading Docker Compose services…</td></tr>
+        </tbody></table></div>
       </article>
     </section>
 

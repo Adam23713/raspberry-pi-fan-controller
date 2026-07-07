@@ -70,6 +70,7 @@ th { color: #b3c0d0; font-size: .7rem; font-weight: 500; text-transform: upperca
 .bar { display: inline-block; width: min(150px, 12vw); height: 7px; margin-right: 12px; overflow: hidden; border-radius: 8px; background: #16222e; vertical-align: middle; }
 .bar i { display: block; width: var(--w); height: 100%; border-radius: inherit; background: var(--green); }
 .badge { padding: 4px 9px; border: 1px solid #14482b; border-radius: 7px; color: var(--green); background: #0d311f; }
+.badge.stopped { border-color: #594421; color: var(--yellow); background: #2b2110; }
 .table-action { display: block; min-width: 190px; margin: 8px auto 0; padding: 8px 14px; color: #82b9ff; background: transparent; font-size: .74rem; text-transform: uppercase; }
 @media (max-width: 1050px) { .metric-grid { grid-template-columns: repeat(2, 1fr); } .dashboard-grid { grid-template-columns: 1fr; } }
 @media (max-width: 700px) { .shell { width: min(100% - 24px, 1480px); padding-top: 14px; } .topbar, .brand { align-items: flex-start; } .topbar { flex-direction: column; } h1 { white-space: normal; } .top-time { width: 100%; justify-content: space-between; } .metric-grid { grid-template-columns: 1fr; } .controls { grid-template-columns: 1fr; } .subpanel { min-height: auto; } .bar { width: 85px; } }

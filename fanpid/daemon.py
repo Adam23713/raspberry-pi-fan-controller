@@ -3,6 +3,7 @@ import logging
 from threading import Thread
 
 from fanpid.config import load_config
+from fanpid.compose import DockerCliComposeServiceMonitorService
 from fanpid.controller import FanController
 from fanpid.fan import Fan
 from fanpid.process import PsutilProcessMonitorService
@@ -21,6 +22,7 @@ def main() -> None:
     state = FanState()
     service = DefaultFanControlService(state)
     process_monitor_service = PsutilProcessMonitorService()
+    compose_service_monitor = DockerCliComposeServiceMonitorService()
     controller = FanController(
         config,
         fan,
@@ -34,6 +36,7 @@ def main() -> None:
             args=(
                 service,
                 process_monitor_service,
+                compose_service_monitor,
                 config.web.host,
                 config.web.port,
             ),

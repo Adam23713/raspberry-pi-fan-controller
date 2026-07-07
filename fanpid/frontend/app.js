@@ -150,6 +150,66 @@ async function refreshProcesses() {
   }
 }
 
+function formatDuration(seconds) {
+  if (seconds == null) return "–";
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor(seconds % 86400 / 3600);
+  const minutes = Math.floor(seconds % 3600 / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return [
+    days ? `${days}d` : null,
+    `${hours}h`,
+    `${minutes}m`,
+    `${remainingSeconds}s`,
+  ].filter(Boolean).join(" ");
+}
+
+function renderComposeServices(services) {
+  const serviceList = document.getElementById("compose-service-list");
+  serviceList.replaceChildren();
+  if (!services.length) {
+    const row = document.createElement("tr");
+    const cell = createCell("No Docker Compose services found", "muted-row");
+    cell.colSpan = 5;
+    row.append(cell);
+    serviceList.append(row);
+    return;
+  }
+
+  services.forEach(service => {
+    const row = document.createElement("tr");
+    const statusCell = document.createElement("td");
+    const badge = document.createElement("span");
+    badge.className = `badge${service.status.toLowerCase() === "running" ? "" : " stopped"}`;
+    badge.textContent = service.status;
+    statusCell.append(badge);
+    row.append(
+      createCell(service.name),
+      statusCell,
+      createCell(service.cpu_percent == null ? "–" : `${service.cpu_percent.toFixed(1)}%`),
+      createCell(formatBytes(service.memory_bytes)),
+      createCell(formatDuration(service.uptime_seconds)),
+    );
+    serviceList.append(row);
+  });
+}
+
+async function refreshComposeServices() {
+  try {
+    const response = await fetch("/api/compose-services", { cache: "no-store" });
+    if (!response.ok) throw new Error(response.status);
+    renderComposeServices(await response.json());
+  } catch (error) {
+    const serviceList = document.getElementById("compose-service-list");
+    serviceList.replaceChildren();
+    const row = document.createElement("tr");
+    const cell = createCell("Docker Compose data unavailable", "muted-row");
+    cell.colSpan = 5;
+    row.append(cell);
+    serviceList.append(row);
+  }
+}
+
 async function applyMode() {
   const button = document.getElementById("apply-mode"), message = document.getElementById("control-status"); button.disabled = true; message.textContent = "Saving…";
   try { const response = await fetch("/api/mode", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: document.getElementById("mode").value }) }); if (!response.ok) throw new Error(response.status); const data = await response.json(); manualDutyDirty = false; updateControlState(data); if (data.mode === "manual") updateDutyControl(0); message.textContent = "Mode updated"; }
@@ -166,4 +226,4 @@ function updateClock() { document.getElementById("clock").textContent = new Date
 
 document.getElementById("apply-mode").addEventListener("click", applyMode); document.getElementById("apply-duty").addEventListener("click", applyDuty);
 document.getElementById("manual-duty").addEventListener("input", event => { manualDutyDirty = true; updateDutyControl(event.target.value); });
-window.addEventListener("resize", redrawCharts); updateClock(); refresh(); refreshProcesses(); setInterval(updateClock, 1000); setInterval(refresh, 2000); setInterval(refreshProcesses, 5000);
+window.addEventListener("resize", redrawCharts); updateClock(); refresh(); refreshProcesses(); refreshComposeServices(); setInterval(updateClock, 1000); setInterval(refresh, 2000); setInterval(refreshProcesses, 5000); setInterval(refreshComposeServices, 10000);
