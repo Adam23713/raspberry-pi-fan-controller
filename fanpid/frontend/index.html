@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Raspberry Pi Fan Controller</title>
+  <link rel="icon" type="image/png" href="/assets/fanpid.png">
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><h1>Raspberry Pi Fan Controller</h1><span id="header-status" class="online-state"><i class="dot"></i><span>Waiting</span></span></div>
+      <div class="top-time"><span id="clock">--</span></div>
+    </header>
+
+    <section class="metric-grid">
+      <article class="panel metric"><div class="eyebrow">CPU temperature</div><div class="metric-value green"><span id="temperature">--</span> <span class="unit">°C</span></div><canvas id="temp-spark" class="spark"></canvas></article>
+      <article class="panel metric"><div class="eyebrow">Raw temperature</div><div class="metric-value blue"><span id="raw-temperature">--</span> <span class="unit">°C</span></div><canvas id="raw-spark" class="spark"></canvas></article>
+      <article class="panel metric"><div class="eyebrow">Temperature setpoint</div><div class="metric-value purple"><span id="setpoint">--</span> <span class="unit">°C</span></div><canvas id="setpoint-spark" class="spark"></canvas></article>
+      <article class="panel metric"><div class="eyebrow">Fan PWM</div><div class="metric-value yellow"><span id="duty">--</span> <span class="unit">%</span></div><canvas id="duty-spark" class="spark"></canvas></article>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="panel section">
+        <div class="section-head"><h2>Temperature over time</h2><select class="time-range" aria-label="Chart range"><option>30 min</option></select></div>
+        <div class="chart-legend"><span class="green"><i class="legend-dot"></i>CPU Temp (°C)</span><span class="blue"><i class="legend-dot"></i>Raw Temp (°C)</span><span class="purple"><i class="legend-dot"></i>Setpoint (°C)</span></div>
+        <canvas id="history-chart"></canvas>
+      </article>
+
+      <article class="panel section">
+        <div class="section-head"><h2>Control mode &amp; fan PWM</h2></div>
+        <div class="controls">
+          <section class="subpanel">
+            <div class="subpanel-title">Control mode</div><div id="current-mode" class="mode-readout">--</div>
+            <label class="field-label" for="mode">Change mode</label><select id="mode" class="select-full"><option value="automatic">Automatic</option><option value="manual">Manual</option></select>
+            <button id="apply-mode" class="primary" type="button">Apply</button><div id="control-status" class="message"></div>
+          </section>
+          <section class="subpanel">
+            <div class="subpanel-title" style="text-align:center">Manual fan PWM</div>
+            <div id="gauge" class="gauge"><div id="gauge-value" class="gauge-value">0%</div></div>
+            <div class="range-row"><input id="manual-duty" type="range" min="0" max="100" step="1" value="0" disabled><output id="manual-duty-value" class="range-value">0%</output></div>
+            <button id="apply-duty" class="primary" type="button" disabled>Apply PWM</button><div id="duty-status" class="message"></div><div class="hint">(Only in Manual mode)</div>
+          </section>
+          <section class="subpanel">
+            <div class="subpanel-title" style="text-align:center">PID parameters</div>
+            <div class="pid-row"><span>Kp</span><strong>2.00</strong></div><div class="pid-row"><span>Ki</span><strong>0.50</strong></div><div class="pid-row"><span>Kd</span><strong>1.00</strong></div>
+            <button class="outline" type="button">Edit PID</button>
+          </section>
+        </div>
+      </article>
+
+      <article class="panel section">
+        <div class="section-head"><h2>Process monitor (top 5 by CPU)</h2></div>
+        <div class="table-wrap"><table><thead><tr><th>Process</th><th>CPU %</th><th>Mem %</th><th>Memory</th></tr></thead><tbody>
+          <tr><td class="process accent">◈ &nbsp;fanpid.py</td><td><span class="bar"><i style="--w:100%"></i></span>12.4%</td><td>1.1%</td><td>45.3 MB</td></tr>
+          <tr><td class="process">🐍 &nbsp;python3</td><td><span class="bar"><i style="--w:65%"></i></span>8.7%</td><td>0.9%</td><td>32.1 MB</td></tr>
+          <tr><td class="process">⚙ &nbsp;kworker/u8:2-events</td><td><span class="bar"><i style="--w:47%"></i></span>6.2%</td><td>0.0%</td><td>–</td></tr>
+          <tr><td class="process">△ &nbsp;jellyfin</td><td><span class="bar"><i style="--w:35%"></i></span>4.8%</td><td>2.3%</td><td>98.7 MB</td></tr>
+          <tr><td class="process">▣ &nbsp;caddy</td><td><span class="bar"><i style="--w:27%"></i></span>3.6%</td><td>1.4%</td><td>57.2 MB</td></tr>
+        </tbody></table></div><button class="table-action" type="button">View all processes</button>
+      </article>
+
+      <article class="panel section">
+        <div class="section-head"><h2>Docker Compose services</h2></div>
+        <div class="table-wrap"><table><thead><tr><th>Service</th><th>Status</th><th>CPU %</th><th>Memory</th><th>Uptime</th></tr></thead><tbody>
+          <tr><td>fan-controller</td><td><span class="badge">Running</span></td><td>1.2%</td><td>45.3 MB</td><td>2h 34m 12s</td></tr>
+          <tr><td>prometheus</td><td><span class="badge">Running</span></td><td>0.6%</td><td>38.1 MB</td><td>2h 34m 12s</td></tr>
+          <tr><td>grafana</td><td><span class="badge">Running</span></td><td>0.4%</td><td>56.7 MB</td><td>2h 34m 12s</td></tr>
+          <tr><td>portainer</td><td><span class="badge">Running</span></td><td>0.2%</td><td>27.8 MB</td><td>2h 34m 12s</td></tr>
+          <tr><td>caddy</td><td><span class="badge">Running</span></td><td>0.3%</td><td>33.2 MB</td><td>2h 34m 12s</td></tr>
+        </tbody></table></div><button class="table-action" type="button">View all services</button>
+      </article>
+    </section>
+
+  </main>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>

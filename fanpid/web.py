@@ -4,14 +4,15 @@ from typing import Optional
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from fanpid.service import FanControlService, ManualControlUnavailableError
 from fanpid.state import ControlMode
 
 
-INDEX_HTML = Path(__file__).with_name("index.html")
-FAVICON = Path(__file__).with_name("fanpid.png")
+FRONTEND_DIR = Path(__file__).with_name("frontend")
+INDEX_HTML = FRONTEND_DIR / "index.html"
 
 
 class FanStatusDto(BaseModel):
@@ -51,14 +52,11 @@ def create_app(service: FanControlService) -> FastAPI:
         docs_url=None,
         redoc_url=None,
     )
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIR), name="assets")
 
     @app.get("/", response_class=FileResponse)
     def dashboard() -> FileResponse:
         return FileResponse(INDEX_HTML)
-
-    @app.get("/favicon.png", response_class=FileResponse, include_in_schema=False)
-    def favicon() -> FileResponse:
-        return FileResponse(FAVICON, media_type="image/png")
 
     @app.get("/api/status", response_model=FanStatusDto)
     def status() -> FanStatusDto:

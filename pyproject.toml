@@ -22,4 +22,4 @@ fanpid = "fanpid.daemon:main"
 include = ["fanpid*"]
 
 [tool.setuptools.package-data]
-fanpid = ["index.html", "fanpid.png"]
+fanpid = ["frontend/*"]
