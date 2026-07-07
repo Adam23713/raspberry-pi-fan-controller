@@ -92,9 +92,10 @@ processes, and Docker Compose service statistics. The fan can be switched
 between automatic PID control and manual `0%`–`100%` PWM control. Entering
 manual mode always starts at `0%`.
 
-The PID panel is currently display-only; values remain configured in
-`config/fanpid.toml`. The Docker panel requires local Docker CLI access and
-stays empty when Docker is unavailable.
+Kp, Ki, and Kd can be tuned at runtime from the PID panel. These changes last
+until the daemon restarts; startup values come from `config/fanpid.toml`. The
+Docker panel requires local Docker CLI access and stays empty when Docker is
+unavailable.
 
 The dashboard currently has no authentication and includes fan-control
 operations. Keep it on a trusted local network and do not expose it directly to
@@ -187,7 +188,7 @@ systemd/fanpid.service
 ## Roadmap
 
 - Safe shutdown and failsafe operation
-- Web-based PID configuration
+- Persistent web-based PID configuration
 - Persistent historical metrics
 
 ## License

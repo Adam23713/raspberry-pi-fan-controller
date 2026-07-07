@@ -243,8 +243,60 @@ async function applyDuty() {
   catch (error) { message.textContent = "Could not set PWM"; } finally { button.disabled = document.getElementById("current-mode").textContent !== "Manual"; }
 }
 
+function renderPidParameters(parameters) {
+  document.getElementById("pid-kp").value = parameters.kp;
+  document.getElementById("pid-ki").value = parameters.ki;
+  document.getElementById("pid-kd").value = parameters.kd;
+}
+
+async function refreshPidParameters() {
+  const message = document.getElementById("pid-status");
+  try {
+    const response = await fetch("/api/pid", { cache: "no-store" });
+    if (!response.ok) throw new Error(response.status);
+    renderPidParameters(await response.json());
+  } catch (error) {
+    message.textContent = "PID parameters unavailable";
+  }
+}
+
+async function applyPidParameters() {
+  const button = document.getElementById("apply-pid");
+  const message = document.getElementById("pid-status");
+  const values = ["pid-kp", "pid-ki", "pid-kd"].map(
+    id => document.getElementById(id).value.trim(),
+  );
+  const parameters = {
+    kp: Number(values[0]),
+    ki: Number(values[1]),
+    kd: Number(values[2]),
+  };
+  if (values.some(value => value === "") || Object.values(parameters).some(value => !Number.isFinite(value) || value < 0)) {
+    message.textContent = "Enter non-negative numbers";
+    return;
+  }
+
+  button.disabled = true;
+  message.textContent = "Saving…";
+  try {
+    const response = await fetch("/api/pid", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(parameters),
+    });
+    if (!response.ok) throw new Error(response.status);
+    renderPidParameters(await response.json());
+    message.textContent = "PID parameters updated";
+  } catch (error) {
+    message.textContent = "Could not update PID parameters";
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function updateClock() { document.getElementById("clock").textContent = new Date().toLocaleString(); }
 
 document.getElementById("apply-mode").addEventListener("click", applyMode); document.getElementById("apply-duty").addEventListener("click", applyDuty);
+document.getElementById("apply-pid").addEventListener("click", applyPidParameters);
 document.getElementById("manual-duty").addEventListener("input", event => { manualDutyDirty = true; updateDutyControl(event.target.value); });
-window.addEventListener("resize", redrawCharts); updateClock(); refresh(); refreshProcesses(); refreshComposeServices(); setInterval(updateClock, 1000); setInterval(refresh, 2000); setInterval(refreshProcesses, 5000); setInterval(refreshComposeServices, 10000);
+window.addEventListener("resize", redrawCharts); updateClock(); refresh(); refreshPidParameters(); refreshProcesses(); refreshComposeServices(); setInterval(updateClock, 1000); setInterval(refresh, 2000); setInterval(refreshProcesses, 5000); setInterval(refreshComposeServices, 10000);

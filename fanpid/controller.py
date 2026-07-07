@@ -16,12 +16,13 @@ class FanController:
         fan: Fan,
         temperature_reader: CpuTemperatureReader,
         state: FanState,
+        pid: PidController,
     ):
         self._config = config
         self._fan = fan
         self._temperature_reader = temperature_reader
         self._state = state
-        self._pid = PidController(config.pid)
+        self._pid = pid
         self._temperatures: deque[float] = deque(
             maxlen=config.temperature.average_samples
         )
@@ -58,7 +59,7 @@ class FanController:
             self._state.update(
                 raw_temperature,
                 temperature,
-                self._config.pid.target_temp,
+                self._pid.get_setpoint(),
                 duty,
             )
             self._log_status(temperature, raw_temperature, duty)

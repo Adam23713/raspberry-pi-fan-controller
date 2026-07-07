@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from fanpid.compose import ComposeServiceInfo, ComposeServiceMonitorService
+from fanpid.pid import PidParameters
 from fanpid.process import ProcessInfo, ProcessMonitorService
 from fanpid.service import FanControlService, ManualControlUnavailableError
 from fanpid.state import ControlMode
@@ -51,6 +52,12 @@ class ComposeServiceDto(BaseModel):
     uptime_seconds: Optional[int] = None
 
 
+class PidParametersDto(BaseModel):
+    kp: float
+    ki: float
+    kd: float
+
+
 def _to_status_dto(service: FanControlService) -> FanStatusDto:
     current_status = service.get_status()
     return FanStatusDto(
@@ -84,6 +91,14 @@ def _to_compose_service_dto(service: ComposeServiceInfo) -> ComposeServiceDto:
     )
 
 
+def _to_pid_parameters_dto(parameters: PidParameters) -> PidParametersDto:
+    return PidParametersDto(
+        kp=parameters.kp,
+        ki=parameters.ki,
+        kd=parameters.kd,
+    )
+
+
 def create_app(
     fan_control_service: FanControlService,
     process_monitor_service: ProcessMonitorService,
@@ -103,6 +118,20 @@ def create_app(
     @app.get("/api/status", response_model=FanStatusDto)
     def status() -> FanStatusDto:
         return _to_status_dto(fan_control_service)
+
+    @app.get("/api/pid", response_model=PidParametersDto)
+    def pid_parameters() -> PidParametersDto:
+        return _to_pid_parameters_dto(fan_control_service.get_pid_parameters())
+
+    @app.put("/api/pid", response_model=PidParametersDto)
+    def update_pid_parameters(request: PidParametersDto) -> PidParametersDto:
+        try:
+            parameters = fan_control_service.update_pid_parameters(
+                PidParameters(kp=request.kp, ki=request.ki, kd=request.kd)
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        return _to_pid_parameters_dto(parameters)
 
     @app.get("/api/processes", response_model=list[ProcessDto])
     def processes() -> list[ProcessDto]:

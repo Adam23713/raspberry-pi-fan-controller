@@ -7,6 +7,7 @@ from fanpid.compose import DockerCliComposeServiceMonitorService
 from fanpid.controller import FanController
 from fanpid.fan import Fan
 from fanpid.process import PsutilProcessMonitorService
+from fanpid.pid import PidController
 from fanpid.service import DefaultFanControlService
 from fanpid.state import FanState
 from fanpid.temperature import FileCpuTemperatureReader
@@ -20,7 +21,8 @@ def main() -> None:
     config = load_config(arguments.config)
     fan = Fan(config.fan)
     state = FanState()
-    service = DefaultFanControlService(state)
+    pid = PidController(config.pid)
+    service = DefaultFanControlService(state, pid)
     process_monitor_service = PsutilProcessMonitorService()
     compose_service_monitor = DockerCliComposeServiceMonitorService()
     controller = FanController(
@@ -28,6 +30,7 @@ def main() -> None:
         fan,
         FileCpuTemperatureReader(config.temperature.file),
         state,
+        pid,
     )
 
     if config.web.enabled:

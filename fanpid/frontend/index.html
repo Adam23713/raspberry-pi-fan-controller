@@ -44,8 +44,11 @@
           </section>
           <section class="subpanel">
             <div class="subpanel-title" style="text-align:center">PID parameters</div>
-            <div class="pid-row"><span>Kp</span><strong>2.00</strong></div><div class="pid-row"><span>Ki</span><strong>0.50</strong></div><div class="pid-row"><span>Kd</span><strong>1.00</strong></div>
-            <button class="outline" type="button">Edit PID</button>
+            <label class="pid-row" for="pid-kp"><span>Kp</span><input id="pid-kp" class="pid-input" type="number" min="0" step="0.01"></label>
+            <label class="pid-row" for="pid-ki"><span>Ki</span><input id="pid-ki" class="pid-input" type="number" min="0" step="0.01"></label>
+            <label class="pid-row" for="pid-kd"><span>Kd</span><input id="pid-kd" class="pid-input" type="number" min="0" step="0.01"></label>
+            <button id="apply-pid" class="outline" type="button">Apply PID</button>
+            <div id="pid-status" class="message"></div>
           </section>
         </div>
       </article>
