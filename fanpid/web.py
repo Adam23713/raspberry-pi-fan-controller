@@ -86,6 +86,10 @@ DASHBOARD_HTML = """<!doctype html>
         <div class="value"><span id="raw-temperature">--</span> <span class="unit">°C</span></div>
       </article>
       <article class="card">
+        <div class="label">Temperature setpoint</div>
+        <div class="value"><span id="setpoint">--</span> <span class="unit">°C</span></div>
+      </article>
+      <article class="card">
         <div class="label">Fan PWM</div>
         <div class="value"><span id="duty">--</span> <span class="unit">%</span></div>
       </article>
@@ -106,6 +110,7 @@ DASHBOARD_HTML = """<!doctype html>
         const data = await response.json();
         document.getElementById("temperature").textContent = number(data.temperature);
         document.getElementById("raw-temperature").textContent = number(data.raw_temperature);
+        document.getElementById("setpoint").textContent = number(data.setpoint);
         document.getElementById("duty").textContent = number(data.duty == null ? null : data.duty * 100);
         document.getElementById("updated-at").textContent = data.updated_at == null
           ? "--"
