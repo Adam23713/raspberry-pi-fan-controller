@@ -36,25 +36,22 @@ class FanController:
             self._temperatures.append(raw_temperature)
             temperature = sum(self._temperatures) / len(self._temperatures)
 
-            mode = self._state.snapshot().mode
+            control_status = self._state.snapshot()
+            mode = control_status.mode
             if mode == ControlMode.AUTOMATIC:
                 duty = self._pid.calculate(temperature, self._previous_duty)
                 if duty > 0.0:
                     duty = max(duty, self._config.fan.min_duty)
                 duty = min(duty, self._config.fan.max_duty)
+                starting_fan = self._previous_duty == 0.0 and duty > 0.0
+                if starting_fan:
+                    self._kickstart_fan()
+                else:
+                    duty = self._limit_pwm_step(duty)
             else:
-                duty = self._previous_duty
-
-            starting_fan = self._previous_duty == 0.0 and duty > 0.0
-            if starting_fan:
-                self._logger.info(
-                    "Starting fan with %.0f%% PWM for %.1f s",
-                    self._config.fan.kickstart_duty * 100,
-                    self._config.fan.kickstart_time,
-                )
-                self._fan.kickstart()
-            else:
-                duty = self._limit_pwm_step(duty)
+                duty = control_status.manual_duty or 0.0
+                if self._previous_duty == 0.0 and duty > 0.0:
+                    self._kickstart_fan()
 
             self._fan.set_duty(duty)
             self._previous_duty = duty
@@ -66,6 +63,14 @@ class FanController:
             )
             self._log_status(temperature, raw_temperature, duty)
             time.sleep(self._config.pid.sample_time)
+
+    def _kickstart_fan(self) -> None:
+        self._logger.info(
+            "Starting fan with %.0f%% PWM for %.1f s",
+            self._config.fan.kickstart_duty * 100,
+            self._config.fan.kickstart_time,
+        )
+        self._fan.kickstart()
 
     def _limit_pwm_step(self, new_duty: float) -> float:
         delta = new_duty - self._previous_duty

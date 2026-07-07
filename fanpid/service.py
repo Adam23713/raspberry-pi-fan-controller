@@ -1,6 +1,11 @@
 from abc import ABC, abstractmethod
 
-from fanpid.state import ControlMode, FanState, FanStatus
+from fanpid.state import (
+    ControlMode,
+    FanState,
+    FanStatus,
+    ManualControlUnavailableError,
+)
 
 
 class FanControlService(ABC):
@@ -12,6 +17,10 @@ class FanControlService(ABC):
     def set_mode(self, mode: ControlMode) -> FanStatus:
         """Change the fan control mode and return the updated status."""
 
+    @abstractmethod
+    def set_manual_duty(self, duty: float) -> FanStatus:
+        """Set the requested fan duty while manual mode is active."""
+
 
 class DefaultFanControlService(FanControlService):
     def __init__(self, state: FanState):
@@ -22,3 +31,8 @@ class DefaultFanControlService(FanControlService):
 
     def set_mode(self, mode: ControlMode) -> FanStatus:
         return self._state.set_mode(mode)
+
+    def set_manual_duty(self, duty: float) -> FanStatus:
+        if not 0.0 <= duty <= 1.0:
+            raise ValueError("Manual fan duty must be between 0.0 and 1.0.")
+        return self._state.set_manual_duty(duty)
