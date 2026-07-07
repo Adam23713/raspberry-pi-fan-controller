@@ -5,7 +5,7 @@ from collections import deque
 from fanpid.config import Config
 from fanpid.fan import Fan
 from fanpid.pid import PidController
-from fanpid.state import FanState
+from fanpid.state import ControlMode, FanState
 from fanpid.temperature import CpuTemperatureReader
 
 
@@ -36,10 +36,14 @@ class FanController:
             self._temperatures.append(raw_temperature)
             temperature = sum(self._temperatures) / len(self._temperatures)
 
-            duty = self._pid.calculate(temperature, self._previous_duty)
-            if duty > 0.0:
-                duty = max(duty, self._config.fan.min_duty)
-            duty = min(duty, self._config.fan.max_duty)
+            mode = self._state.snapshot().mode
+            if mode == ControlMode.AUTOMATIC:
+                duty = self._pid.calculate(temperature, self._previous_duty)
+                if duty > 0.0:
+                    duty = max(duty, self._config.fan.min_duty)
+                duty = min(duty, self._config.fan.max_duty)
+            else:
+                duty = self._previous_duty
 
             starting_fan = self._previous_duty == 0.0 and duty > 0.0
             if starting_fan:

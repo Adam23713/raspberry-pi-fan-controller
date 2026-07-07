@@ -6,6 +6,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from fanpid.service import FanControlService
+from fanpid.state import ControlMode
 
 
 class FanStatusDto(BaseModel):
@@ -13,7 +14,24 @@ class FanStatusDto(BaseModel):
     temperature: Optional[float] = None
     setpoint: Optional[float] = None
     duty: float
+    mode: ControlMode
     updated_at: Optional[float] = None
+
+
+class SetControlModeDto(BaseModel):
+    mode: ControlMode
+
+
+def _to_status_dto(service: FanControlService) -> FanStatusDto:
+    current_status = service.get_status()
+    return FanStatusDto(
+        raw_temperature=current_status.raw_temperature,
+        temperature=current_status.temperature,
+        setpoint=current_status.setpoint,
+        duty=current_status.duty,
+        mode=current_status.mode,
+        updated_at=current_status.updated_at,
+    )
 
 
 def create_app(service: FanControlService) -> FastAPI:
@@ -29,14 +47,12 @@ def create_app(service: FanControlService) -> FastAPI:
 
     @app.get("/api/status", response_model=FanStatusDto)
     def status() -> FanStatusDto:
-        current_status = service.get_status()
-        return FanStatusDto(
-            raw_temperature=current_status.raw_temperature,
-            temperature=current_status.temperature,
-            setpoint=current_status.setpoint,
-            duty=current_status.duty,
-            updated_at=current_status.updated_at,
-        )
+        return _to_status_dto(service)
+
+    @app.put("/api/mode", response_model=FanStatusDto)
+    def set_mode(request: SetControlModeDto) -> FanStatusDto:
+        service.set_mode(request.mode)
+        return _to_status_dto(service)
 
     return app
 
@@ -67,6 +83,12 @@ DASHBOARD_HTML = """<!doctype html>
     .label { color: #91a0b5; font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; }
     .value { margin-top: 10px; font-size: 2.2rem; font-weight: 700; }
     .unit { color: #91a0b5; font-size: 1rem; font-weight: 500; }
+    .control { display: flex; gap: 10px; margin-top: 10px; }
+    select, button { border: 1px solid #3a485d; border-radius: 8px; padding: 10px 12px; font: inherit; }
+    select { flex: 1; background: #10151d; color: #e8edf4; }
+    button { background: #3478c9; color: white; cursor: pointer; }
+    button:disabled { cursor: wait; opacity: .65; }
+    .control-status { min-height: 1.2em; margin-top: 8px; color: #91a0b5; font-size: .85rem; }
     .footer { margin-top: 24px; color: #91a0b5; font-size: .9rem; }
     .online { color: #65d69e; }
     .offline { color: #f2bd67; }
@@ -93,6 +115,17 @@ DASHBOARD_HTML = """<!doctype html>
         <div class="label">Fan PWM</div>
         <div class="value"><span id="duty">--</span> <span class="unit">%</span></div>
       </article>
+      <article class="card">
+        <div class="label">Control mode</div>
+        <div class="control">
+          <select id="mode">
+            <option value="automatic">Automatic</option>
+            <option value="manual">Manual</option>
+          </select>
+          <button id="apply-mode" type="button">Apply</button>
+        </div>
+        <div id="control-status" class="control-status"></div>
+      </article>
     </section>
     <p class="footer">
       Status: <span id="status" class="offline">Waiting for data</span>
@@ -112,6 +145,7 @@ DASHBOARD_HTML = """<!doctype html>
         document.getElementById("raw-temperature").textContent = number(data.raw_temperature);
         document.getElementById("setpoint").textContent = number(data.setpoint);
         document.getElementById("duty").textContent = number(data.duty == null ? null : data.duty * 100);
+        document.getElementById("mode").value = data.mode;
         document.getElementById("updated-at").textContent = data.updated_at == null
           ? "--"
           : new Date(data.updated_at * 1000).toLocaleString();
@@ -123,6 +157,31 @@ DASHBOARD_HTML = """<!doctype html>
       }
     }
 
+    async function applyMode() {
+      const button = document.getElementById("apply-mode");
+      const controlStatus = document.getElementById("control-status");
+      button.disabled = true;
+      controlStatus.textContent = "Saving…";
+      try {
+        const response = await fetch("/api/mode", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode: document.getElementById("mode").value }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        document.getElementById("mode").value = data.mode;
+        controlStatus.textContent = data.mode === "automatic"
+          ? "Automatic PID control enabled"
+          : "Manual mode: current PWM is held";
+      } catch (error) {
+        controlStatus.textContent = "Could not change control mode";
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    document.getElementById("apply-mode").addEventListener("click", applyMode);
     refresh();
     setInterval(refresh, 2000);
   </script>

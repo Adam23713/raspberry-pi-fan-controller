@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from threading import Lock
 from time import time
 from typing import Optional
+
+
+class ControlMode(str, Enum):
+    AUTOMATIC = "automatic"
+    MANUAL = "manual"
 
 
 @dataclass(frozen=True)
@@ -12,6 +18,7 @@ class FanStatus:
     temperature: Optional[float] = None
     setpoint: Optional[float] = None
     duty: float = 0.0
+    mode: ControlMode = ControlMode.AUTOMATIC
     updated_at: Optional[float] = None
 
 
@@ -27,15 +34,28 @@ class FanState:
         setpoint: float,
         duty: float,
     ) -> None:
-        status = FanStatus(
-            raw_temperature=raw_temperature,
-            temperature=temperature,
-            setpoint=setpoint,
-            duty=duty,
-            updated_at=time(),
-        )
         with self._lock:
-            self._status = status
+            self._status = FanStatus(
+                raw_temperature=raw_temperature,
+                temperature=temperature,
+                setpoint=setpoint,
+                duty=duty,
+                mode=self._status.mode,
+                updated_at=time(),
+            )
+
+    def set_mode(self, mode: ControlMode) -> FanStatus:
+        with self._lock:
+            current = self._status
+            self._status = FanStatus(
+                raw_temperature=current.raw_temperature,
+                temperature=current.temperature,
+                setpoint=current.setpoint,
+                duty=current.duty,
+                mode=mode,
+                updated_at=current.updated_at,
+            )
+            return self._status
 
     def snapshot(self) -> FanStatus:
         with self._lock:
